@@ -6,6 +6,8 @@
 
 #include <dynamic-graph/linear-algebra.h>
 
+#include <sot/core/matrix-homogeneous.hh>
+
 #include <geometric_shapes/shapes.h>
 #include <geometric_shapes/shape_operations.h>
 #include <tf/transform_datatypes.h>
@@ -63,8 +65,8 @@ inline dynamicgraph::Vector convertToDG(fcl::Vec3f fcl_vec){
     return dg_vec;
 }
 
-inline dynamicgraph::Matrix convertToDG(fcl::Transform3f fcl_matrix){
-    dynamicgraph::Matrix dg_mat(4,4);
+inline sot::MatrixHomogeneous convertToDG(fcl::Transform3f fcl_matrix){
+    sot::MatrixHomogeneous dg_mat;
     dg_mat.setIdentity();
 
     fcl::Matrix3f r = fcl_matrix.getRotation();
@@ -205,6 +207,26 @@ inline dynamicgraph::Matrix sot_rotation_fix(const dynamicgraph::Matrix in){
 
 //    return in*sot_compensation;
 //}
+
+inline tf::Transform transformToTF(const fcl::CollisionObject capsule){
+    tf::Transform transform;
+
+    fcl::Transform3f transform_fcl = capsule.getTransform();
+
+    tf::Vector3 pos = tf::Vector3(transform_fcl.getTranslation()[0],transform_fcl.getTranslation()[1],transform_fcl.getTranslation()[2]);
+    transform.setOrigin(pos);
+
+    tf::Quaternion quat;
+    quat.setW(capsule.getQuatRotation().getW());
+    quat.setX(capsule.getQuatRotation().getX());
+    quat.setY(capsule.getQuatRotation().getY());
+    quat.setZ(capsule.getQuatRotation().getZ());
+
+    transform.setRotation(quat);
+    transform.setOrigin(pos);
+
+    return transform;
+}
 
 inline tf::Transform transformToTF(const dynamicgraph::Matrix& matrix){
     tf::Transform transform;

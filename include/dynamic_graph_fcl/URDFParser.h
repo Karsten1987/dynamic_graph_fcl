@@ -34,6 +34,7 @@ public:
     ~URDFParser();
 
     std::map<std::string, boost::shared_ptr<fcl::CollisionObject> > getCollisionObjects();
+    boost::shared_ptr<fcl::CollisionObject> getCollisionObject(std::string link_name) ;
 
     void updateLinkPosition(const std::string& link_name,const fcl::Matrix3f& rot, const fcl::Vec3f& pos);
     void updateLinkPosition(const std::string& link_name,const fcl::Transform3f& transform);

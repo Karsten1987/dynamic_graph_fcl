@@ -54,29 +54,37 @@ boost::shared_ptr<fcl::Transform3f> URDFParser::parseCapsule(
 
     urdf::Pose origin_tmp = link->collision->origin;
 
-    std::cerr << "collision origin for "<< link->name
+    std::cerr << "collision origin z for "<< link->name
               << "=" << link->collision->origin.position.z << std::endl;
 
     //check that!
     // This is heavily URDF dependent,
     // as this depends on my capsule decomposition, check the according URDF
-    int sign = 1;
+
+    // CHECK HERE AGAIN!!!
+    int signz = 1;
     if (link->collision->origin.position.z < 0){
-        sign = -1;
+        signz = -1;
     }
-    origin_tmp.position.z -= sign* (collisionGeometry->length/2);
+    origin_tmp.position.z -= signz* (collisionGeometry->length/2);
 
     boost::shared_ptr<fcl::Capsule> capsule =
             boost::shared_ptr<fcl::Capsule>(
-                new fcl::Capsule(collisionGeometry->radius, sign*collisionGeometry->length));
-
+                new fcl::Capsule(collisionGeometry->radius, signz*collisionGeometry->length));
 
     std::cerr << "capsule data; r: " << collisionGeometry->radius
-              << "l: " << collisionGeometry->length << std::endl;
-
+              << " l: " << collisionGeometry->length << std::endl;
+    std::cerr << "with origin shift: " << origin_tmp.position.x << ","
+              << origin_tmp.position.y << ","<< origin_tmp.position.z
+              << std::endl;
 
     collision_object.reset(new fcl::CollisionObject(capsule));
     return Conversions::convertToFCLTransform(origin_tmp);
+}
+
+boost::shared_ptr<fcl::CollisionObject> URDFParser::getCollisionObject(std::string link_name)
+{
+    return collision_objects_[link_name];
 }
 
 std::map<std::string, boost::shared_ptr<fcl::CollisionObject> > URDFParser::getCollisionObjects()
@@ -133,7 +141,7 @@ void URDFParser::updateLinkPosition(const std::string& link_name,
     boost::shared_ptr<fcl::Transform3f> collision_origin
             = collision_objects_origins_[link_name];
 
-    collision_object->setTransform( transform * (*collision_origin));
+    collision_object->setTransform( transform  * (*collision_origin));
 }
 
 fcl::Transform3f URDFParser::getOrigin(const std::string& link_name)

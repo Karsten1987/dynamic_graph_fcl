@@ -217,11 +217,16 @@ sot::MatrixHomogeneous& DynamicGraphFCL::closest_point_update_function(
     updateURDFParser(((*op_point_in_vec_[idy])(i)), idy);
 
 
+    // in URDF orientation
     fcl::Vec3f closest_point_1, closest_point_2;
     urdfParser_->getClosestPoints(joint_collision_names_[idx],
                                   joint_collision_names_[idy],
                                   closest_point_1,
                                   closest_point_2);
+
+//    std::cerr << "closest point1: " << closest_point_1 << std::endl;
+//    std::cerr << "closest point2: " << closest_point_2 << std::endl;
+//    std::cerr << "*****************" <<std::endl;
 
     // IMPORTANT NOTE HERE:
     // The second point is getting ignored
@@ -229,16 +234,39 @@ sot::MatrixHomogeneous& DynamicGraphFCL::closest_point_update_function(
     // Place here the update of the dirty flag
     // by a measurement if any of the given input signals has changed or not.
 
+    // in SOT orientation
     const sot::MatrixHomogeneous& op_point_in = (*op_point_in_vec_[idx])(i);
+    // in SOT orientation
+    sot::MatrixHomogeneous origin_translation = Conversions::convertToDG(urdfParser_->getOrigin(joint_collision_names_[idx]));
+    if (joint_collision_names_[idx].find("left") != std::string::npos){
+        // flip around z component
+        origin_translation.elementAt(3,2) = -1*origin_translation.elementAt(3,2);
+    }
+    // in URDF orientation
+    sot::MatrixHomogeneous origin = sotCompensator_
+            ->fromSOTtoURDF(op_point_in, idx).multiply(origin_translation);
+
+    sot::MatrixHomogeneous origin_sot = sotCompensator_->fromURDFtoSOT(origin, idx);
+
+    // in URDF orientation
     dynamicgraph::Vector cp1 = Conversions::convertToDG(closest_point_1);
-    dynamicgraph::Vector relativ_point = op_point_in.inverse().multiply(cp1);
+    dynamicgraph::Vector cp2 = Conversions::convertToDG(closest_point_2);
+
+    // update here with origin transformation!!!!!
+//    dynamicgraph::Vector relativ_point = op_point_in.inverse().multiply(cp1);
+    dynamicgraph::Vector relativ_point = origin_sot.inverse().multiply(cp1);
 
     int matrixIndex = getMatrixIndex(idx, idy);
     oppoint_transformations_[matrixIndex]->setConstant(relativ_point);
 
 
+//    tfBroadcaster_->sendTransform("op_point2_origin"+joint_collision_names_[idx], Conversions::transformToTF(op_point_in));
+    tfBroadcaster_->sendTransform("op_point2_origin"+joint_collision_names_[idx], Conversions::transformToTF(origin_sot));
+    tfBroadcaster_->sendTransform("op_point2_relativ"+joint_collision_names_[idx], Conversions::transformToTF(relativ_point),"op_point2_origin"+joint_collision_names_[idx]);
+
     sot::MatrixRotation rot1;
-    op_point_in.extract(rot1);
+    origin.extract(rot1);
+//    op_point_in.extract(rot1);
     point.buildFrom(rot1,relativ_point);
 
     point.elementAt(0,3) = closest_point_1[0];
@@ -259,15 +287,24 @@ void DynamicGraphFCL::updateURDFParser(const dynamicgraph::Matrix& op_point_sig,
         are not being under this convention and can be processed as usual.
         */
 
-    dynamicgraph::Matrix origin = Conversions::convertToDG(urdfParser_->getOrigin(joint_collision_names_[id]));
-    dynamicgraph::Matrix urdf_frame = sotCompensator_->applySOTCompensation(op_point_sig, id);
-    dynamicgraph::Matrix urdf_origin = urdf_frame.multiply(origin);
+    dynamicgraph::Matrix urdf_frame = sotCompensator_->fromSOTtoURDF(op_point_sig, id);
+//    dynamicgraph::Matrix origin = Conversions::convertToDG(urdfParser_->getOrigin(joint_collision_names_[id]));
+//    dynamicgraph::Matrix urdf_origin = urdf_frame.multiply(origin);
 
     // update collision objects. Rotation and Position is directly transformed into FCL
     // all transformations got capsuled into Conversion-namespace to keep up the separation between URDF/FCL and DG
+    //    IMPORTANT HERE: The signals getting plugged here are from SoT/JRL
+    //        this mean, the axis are not coherent with what is getting displayed in RVIZ
+    //        at the same level, the URDF cordinates have to be modified according to the capsuls
     urdfParser_->updateLinkPosition(
                 joint_collision_names_[id],
-                *(Conversions::convertToFCLTransform(urdf_origin)));
+                *(Conversions::convertToFCLTransform(urdf_frame)));
+
+    // STIL IN URDF orientation
+    boost::shared_ptr<fcl::CollisionObject> capsule = urdfParser_->getCollisionObject(joint_collision_names_[id]);
+    tfBroadcaster_->sendTransform("capsule_origin_urdf"+joint_collision_names_[id],Conversions::transformToTF(*capsule));
+
+
 
 }
 
