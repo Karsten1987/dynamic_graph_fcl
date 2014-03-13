@@ -12,6 +12,8 @@
 #include <geometric_shapes/shapes.h>
 #include <geometric_shapes/shape_operations.h>
 
+#include <capsule_msgs/Capsule.h>
+
 //#include <dynamic_graph_fcl/Conversions.h>
 
 
@@ -44,6 +46,8 @@ public:
 
     bool isEndeffector(const std::string& link_name) const;
 
+    void publishCapsuleMessage(const std::string& link_name);
+
 private:
     ros::NodeHandle nh_;
     urdf::Model model_;
@@ -58,6 +62,8 @@ private:
     std::map<std::string, boost::shared_ptr<fcl::CollisionObject> > collision_objects_;
     std::map<std::string, boost::shared_ptr<fcl::Transform3f> > collision_objects_origins_;
 
+
+    ros::Publisher pub_capsule_;
 };
 
 }

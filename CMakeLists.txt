@@ -7,15 +7,20 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
 project(dynamic_graph_fcl)
 
-find_package(catkin REQUIRED COMPONENTS geometric_shapes urdf tf)
+find_package(catkin REQUIRED COMPONENTS geometric_shapes urdf tf capsule_msgs)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(FCL REQUIRED fcl)
+
+
 
 catkin_package(
 	INCLUDE_DIRS include
 	LIBRARIES dynamic_graph_fcl
+	CATKIN_DEPENDS urdf geometric_shapes tf capsule_msgs
 	DEPENDS dynamic-graph dynamic-graph-python sot-core
 )
+
+ 
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 
@@ -35,6 +40,7 @@ target_link_libraries(dynamic_graph_test
    ${catkin_LIBRARIES} ${FCL_LIBRARIES} dynamic_graph_fcl
 )
 target_link_libraries(dynamic_graph_fcl ${catkin_LIBRARIES} ${FCL_LIBRARIES})
+
 set(PKG_DEP dynamic-graph dynamic-graph-python sot-core)
 foreach(DEP ${PKG_DEP})
 	message("invoking dependency check for: ${DEP}")

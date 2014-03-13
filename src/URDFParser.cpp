@@ -1,5 +1,6 @@
 
 #include <dynamic_graph_fcl/URDFParser.h>
+
 #include <fcl/distance.h>
 #include <dynamic_graph_fcl/Conversions.h>
 
@@ -13,6 +14,8 @@ URDFParser::URDFParser(const std::string &robot_description_param, const std::ve
 {
     model_.initParam(robot_description_param);
     parseCollisionObjects();
+
+    pub_capsule_ = nh_.advertise<capsule_msgs::Capsule>("dynamic_graph_fcl/capsules",100);
 
     std::cout << "amount of parsed collisionobjects: " << collision_objects_.size() <<std::endl;
 }
@@ -65,6 +68,15 @@ boost::shared_ptr<fcl::Transform3f> URDFParser::parseCapsule(
     int signz = 1;
     if (link->collision->origin.position.z < 0){
         signz = -1;
+    }
+
+    double r,p,y;
+    if (link->name.find("arm_right_2") != std::string::npos){
+        origin_tmp.rotation.getRPY(r,p,y);
+        std::cerr << "arm_right_2 " << r << " " << p << " "<< y << std::endl;
+    }else if(link->name.find("arm_right_3") != std::string::npos){
+        origin_tmp.rotation.getRPY(r,p,y);
+        std::cerr << "arm_right_3 " << r << " " << p << " "<< y << std::endl;
     }
     origin_tmp.position.z -= signz* (collisionGeometry->length/2);
 
@@ -141,7 +153,7 @@ void URDFParser::updateLinkPosition(const std::string& link_name,
     boost::shared_ptr<fcl::Transform3f> collision_origin
             = collision_objects_origins_[link_name];
 
-    collision_object->setTransform( transform  * (*collision_origin));
+    collision_object->setTransform( transform   *(*collision_origin));
 }
 
 fcl::Transform3f URDFParser::getOrigin(const std::string& link_name)
@@ -174,6 +186,27 @@ void URDFParser::getClosestPoints(const std::string &link_name_1,
     p2 = result.nearest_points[1];
 
 }
+
+
+void URDFParser::publishCapsuleMessage(const std::string& link_name) {
+
+    boost::shared_ptr<const fcl::CollisionObject> cobject = collision_objects_[link_name];
+
+    const boost::shared_ptr<const fcl::Capsule> capsule
+            = boost::dynamic_pointer_cast<const fcl::Capsule> (cobject->collisionGeometry());
+
+    geometry_msgs::Transform origin = Conversions::transformToGeometryMsg(getOrigin(link_name));
+
+    capsule_msgs::Capsule message;
+    message.linkname = link_name;
+    message.radius = (float)capsule->radius;
+    message.length = (float)capsule->lz;
+    message.origin = origin;
+
+    pub_capsule_.publish(message);
+
+}
+
 
 }
 }

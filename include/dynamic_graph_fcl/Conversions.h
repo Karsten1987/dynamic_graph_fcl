@@ -119,10 +119,10 @@ inline boost::shared_ptr<fcl::Transform3f> convertToFCLTransform(const urdf::Pos
     fcl_transform->setTranslation(trans);
 
     fcl::Matrix3f rot;
-    rot.setIdentity();
-//    double r,p,y;
-//    urdf_pose.rotation.getRPY(r,p,y);
-//    rot.setEulerYPR(y,p,r);
+//    rot.setIdentity();
+    double r,p,y;
+    urdf_pose.rotation.getRPY(r,p,y);
+    rot.setEulerYPR(y,p,r);
 
     fcl_transform->setRotation(rot);
 
@@ -139,74 +139,6 @@ inline boost::shared_ptr<fcl::Transform3f> convertToFCLTransform(const urdf::Pos
 
     return fcl_transform;
 }
-
-/* The DG/SOT respective the JRL-Dynamics uses a convention of rotating each joint around
-                X- AXIS
-
-    This forces a de-transformation according to the URDF
-    Mandatorily this has to be changed according the each URDF or Robot
-
-    Get rid of JRL-Dynamics would make this obsolete!
-*/
-inline dynamicgraph::Matrix sot_rotation_fix(const dynamicgraph::Matrix in){
-    dynamicgraph::Matrix sot_compensation(4,4);
-
-
-////    sot_compensation(0,0) = 0;
-////    sot_compensation(0,1) = 0;
-////    sot_compensation(0,2) = -1;
-////    sot_compensation(0,3) = 0;
-
-////    sot_compensation(1,0) = 0;
-////    sot_compensation(1,1) = 1;
-////    sot_compensation(1,2) = 0;
-////    sot_compensation(1,3) = 0;
-
-////    sot_compensation(2,0) = 1;
-////    sot_compensation(2,1) = 0;
-////    sot_compensation(2,2) = 0;
-////    sot_compensation(2,3) = 0;
-
-////    sot_compensation(3,0) = 0;
-////    sot_compensation(3,1) = 0;
-////    sot_compensation(3,2) = 0;
-////    sot_compensation(3,3) = 1;
-
-    sot_compensation(0,0) = 0;
-    sot_compensation(0,1) = 1;
-    sot_compensation(0,2) = 0;
-    sot_compensation(0,3) = 0;
-
-    sot_compensation(1,0) = 0;
-    sot_compensation(1,1) = 0;
-    sot_compensation(1,2) = 1;
-    sot_compensation(1,3) = 0;
-
-    sot_compensation(2,0) = 1;
-    sot_compensation(2,1) = 0;
-    sot_compensation(2,2) = 0;
-    sot_compensation(2,3) = 0;
-
-    sot_compensation(3,0) = 0;
-    sot_compensation(3,1) = 0;
-    sot_compensation(3,2) = 0;
-    sot_compensation(3,3) = 1;
-
-    return in.multiply(sot_compensation.inverse());
-
-}
-
-//inline fcl::Transform3f sot_rotation_fix(fcl::Transform3f in){
-//    fcl::Transform3f sot_compensation;
-//    fcl::Matrix3f sot_rot(0, 1, 0,
-//                          0, 0, 1,
-//                          1, 0, 0);
-//    fcl::Vec3f sot_trans(0, 0, 0);
-//    sot_compensation.setRotation(sot_rot);
-//    sot_compensation.setTranslation(sot_trans);
-
-//    return in*sot_compensation;
-//}
 
 inline tf::Transform transformToTF(const fcl::CollisionObject capsule){
     tf::Transform transform;
@@ -273,6 +205,25 @@ inline tf::Transform transformToTF(const dynamicgraph::Vector& vector)
     transform.setRotation(quat);
     transform.setOrigin(pos);
 
+    return transform;
+}
+
+inline geometry_msgs::Transform transformToGeometryMsg(const fcl::Transform3f fcl_transform){
+
+    geometry_msgs::Transform transform;
+    geometry_msgs::Quaternion quat;
+    quat.w = fcl_transform.getQuatRotation().getW();
+    quat.x = fcl_transform.getQuatRotation().getX();
+    quat.y = fcl_transform.getQuatRotation().getY();
+    quat.z = fcl_transform.getQuatRotation().getZ();
+
+    geometry_msgs::Vector3 trans;
+    trans.x = fcl_transform.getTranslation()[0];
+    trans.y = fcl_transform.getTranslation()[1];
+    trans.z = fcl_transform.getTranslation()[2];
+
+    transform.rotation = quat;
+    transform.translation = trans;
     return transform;
 }
 

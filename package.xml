@@ -16,11 +16,13 @@
   <build_depend>geometric_shapes</build_depend>
   <build_depend>urdf</build_depend>
   <build_depend>tf</build_depend>
+  <build_depend>capsule_msgs</build_depend>
 
   <run_depend>dynamic-graph</run_depend>
   <run_depend>dynamic-graph-python</run_depend>
   <run_depend>geometric_shapes</run_depend>
   <run_depend>urdf</run_depend>
   <run_depend>tf</run_depend>
+  <run_depend>capsule_msgs</run_depend>
 
 </package>
