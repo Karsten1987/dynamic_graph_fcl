@@ -27,7 +27,13 @@ void URDFParser::parseCollisionObjects()
 
     for (int var = 0; var < joint_names_.size(); ++var) {
 
-        std::string link_name = model_.getJoint( joint_names_[var] )->child_link_name;
+        std::string link_name;
+        if (joint_names_[var].find("base") != std::string::npos){
+            link_name = "base_link";
+        }else{
+            link_name = model_.getJoint( joint_names_[var] )->child_link_name;
+        }
+
         boost::shared_ptr<const urdf::Link> link = getFastLink(link_name);
         boost::shared_ptr<fcl::CollisionObject> collision_object;
 
